@@ -47,9 +47,29 @@ void get_next_token(char* s)
   }
 }
 
+char* translate(int type)
+{
+  switch(type)
+  {
+    case 0:
+      return "INTEGER";
+    case 1:
+      return "OPERATOR";
+  }
+}
+
+void parse(int type)
+{
+  if(cur_token.type)
+  {
+    printf("Syntax error: Expected token of type %s, but received type %s\n", translate(type), translate(cur_token.type));
+    exit(-1);
+  }
+}
+
 void interpret_text(char* s)
 {
-  while(s[cur_pos] != '\0') // it turns we also print the '\0'
+  while(s[cur_pos] != '\0') // if it hits '\0', stop the loop
   {
     get_next_token(s);
     cur_pos++;
