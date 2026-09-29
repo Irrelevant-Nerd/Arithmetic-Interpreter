@@ -19,12 +19,6 @@ typedef struct
 int cur_pos = 0;
 Token cur_token;
 
-void print_current_token(char *s)
-{
-  printf("CHAR: %c\n", s[cur_pos]);
-  printf("TYPE: %d\n", cur_token.type);
-}
-
 void get_next_token(char* s)
 {
   char c = s[cur_pos];
@@ -32,18 +26,11 @@ void get_next_token(char* s)
   {
     cur_token.type = INT;
     cur_token.num_value = c - '0'; // converts the digit character into an integer
-
-    print_current_token(s);
-    printf("VALUE: %d\n\n", cur_token.num_value);
-
   }
   else if(c == '+' || c == '-' || c == '*' || c == '/')
   {
     cur_token.type = OP;
     cur_token.op_value = s[cur_pos];
-
-    print_current_token(s);
-    printf("VALUE: %c\n\n", cur_token.op_value);
   }
 }
 
@@ -55,37 +42,53 @@ char* translate(int type)
       return "INTEGER";
     case 1:
       return "OPERATOR";
+    default:
+      return "N/A";
   }
 }
 
 void parse(int type)
 {
-  if(cur_token.type)
+  // parsing is the process of expecting chars type
+  // if a text follows a correct syntax, its valid, if not then its invalid
+  // in order to identify whether it follows a correct syntax or not is through parsing
+  if(cur_token.type != type) // if the current type is not the ssame to expected type
   {
-    printf("Syntax error: Expected token of type %s, but received type %s\n", translate(type), translate(cur_token.type));
+    printf("Syntax error: Expected token of type %s, but received type %s at position %d\n", translate(type), translate(cur_token.type), cur_pos);
     exit(-1);
   }
+  cur_pos++; // if theres no syntax error, then we can advance
 }
 
 void interpret_text(char* s)
 {
-  while(s[cur_pos] != '\0') // if it hits '\0', stop the loop
-  {
-    get_next_token(s);
-    cur_pos++;
-  }
+  get_next_token(s);
+  parse(INT);
+  int left = cur_token.num_value;
+
+  get_next_token(s);
+  parse(OP);
+  char op = cur_token.op_value;
+
+  get_next_token(s);
+  parse(INT);
+  int right = cur_token.num_value;
 }
 
 int main(void)
 {
   char* s = malloc(sizeof(char) * INPUT_LENGTH); // exactly 1000 bytes
 
-  printf("Interpreter is running... ( CTRL+C to exit )\n");
+  printf("Interpreter is running... ( enter 'q' to quit )\n");
   printf("0 - INT, 1 - OPERATOR\n");
   while(true)
   {
     printf(">>> ");
     fgets(s, INPUT_LENGTH, stdin);
+
+    if(s[0] == 'q')
+      break;
+
     interpret_text(s);
   }
   free(s);
