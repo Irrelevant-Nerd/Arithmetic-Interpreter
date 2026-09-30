@@ -19,6 +19,11 @@ typedef struct
 int cur_pos = 0;
 Token cur_token;
 
+bool isoperator(char c)
+{
+  return c == '+' || c == '-' || c == '*' || c == '/';
+}
+
 void get_next_token(char* s)
 {
   char c = s[cur_pos];
@@ -27,10 +32,15 @@ void get_next_token(char* s)
     cur_token.type = INT;
     cur_token.num_value = c - '0'; // converts the digit character into an integer
   }
-  else if(c == '+' || c == '-' || c == '*' || c == '/')
+  else if(isoperator(c))
   {
     cur_token.type = OP;
     cur_token.op_value = s[cur_pos];
+  }
+  else
+  {
+    printf("Invalid token received at position %d: %c", cur_pos, c);
+    exit(-1);
   }
 }
 
@@ -60,7 +70,24 @@ void parse(int type)
   cur_pos++; // if theres no syntax error, then we can advance
 }
 
-void interpret_text(char* s)
+int get_result(int left, char op, int right)
+{
+  switch(op)
+  {
+    case '+':
+      return left + right;
+    case '-':
+      return left - right;
+    case '*':
+      return left * right;
+    case '/':
+      return left / right;
+    default: // this is most likely wont happen, but still i prefer to include default here
+      return -1;
+  }
+}
+
+int interpret_text(char* s)
 {
   get_next_token(s);
   parse(INT);
@@ -73,6 +100,8 @@ void interpret_text(char* s)
   get_next_token(s);
   parse(INT);
   int right = cur_token.num_value;
+
+  return get_result(left, op, right);
 }
 
 int main(void)
@@ -80,7 +109,6 @@ int main(void)
   char* s = malloc(sizeof(char) * INPUT_LENGTH); // exactly 1000 bytes
 
   printf("Interpreter is running... ( enter 'q' to quit )\n");
-  printf("0 - INT, 1 - OPERATOR\n");
   while(true)
   {
     printf(">>> ");
@@ -89,7 +117,10 @@ int main(void)
     if(s[0] == 'q')
       break;
 
-    interpret_text(s);
+    int result = interpret_text(s);
+    printf("Result: %d\n", result);
+
+    cur_pos = 0; // reset the cur_pos after every interpretation
   }
   free(s);
 
