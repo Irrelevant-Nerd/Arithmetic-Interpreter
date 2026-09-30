@@ -24,9 +24,21 @@ bool isoperator(char c)
   return c == '+' || c == '-' || c == '*' || c == '/';
 }
 
+bool iswhitespace(char c)
+{
+  return c == ' ';
+}
+
 void get_next_token(char* s)
 {
   char c = s[cur_pos];
+
+  while(iswhitespace(c)) // we wont get out of this loop until the current character is not a whitespace anymore
+  {
+    cur_pos ++;
+    c = s[cur_pos];
+  }
+
   if(isdigit(c))
   {
     cur_token.type = INT;
@@ -36,6 +48,9 @@ void get_next_token(char* s)
   {
     cur_token.type = OP;
     cur_token.op_value = s[cur_pos];
+  }
+  else if(iswhitespace(c))
+  {
   }
   else
   {
@@ -108,14 +123,17 @@ int main(void)
 {
   char* s = malloc(sizeof(char) * INPUT_LENGTH); // exactly 1000 bytes
 
-  printf("Interpreter is running... ( enter 'q' to quit )\n");
+  printf("Interpreter is running... ( enter 'q' or 'clear' to quit )\n");
   while(true)
   {
     printf(">>> ");
     fgets(s, INPUT_LENGTH, stdin);
 
     if(s[0] == 'q')
+    {
       break;
+    }
+
 
     int result = interpret_text(s);
     printf("Result: %d\n", result);
