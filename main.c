@@ -4,9 +4,12 @@
 #include <ctype.h>
 #include <string.h>
 
-#define INPUT_LENGTH 1000
-#define INT 0
-#define OP 1
+typedef enum
+{
+  INVALID = -1,
+  INT = 0,
+  OP = 1,
+} Types;
 
 typedef struct
 {
@@ -16,8 +19,9 @@ typedef struct
 
 } Token;
 
-int cur_pos = 0;
 Token cur_token;
+
+int cur_pos = 0;
 
 int calculate(int x, char op, int y)
 {
@@ -27,11 +31,7 @@ int calculate(int x, char op, int y)
       return x + y;
     case '-':
       return x - y;
-    case '*':
-      return x * y;
-    case '/':
-      return x / y;
-    default: // this is most likely wont happen, but still i prefer to include default here
+    default:
       return -1;
   }
 }
@@ -45,24 +45,24 @@ char* translate(int type)
     case 1:
       return "OPERATOR";
     default:
-      return "N/A";
+      return "INVALID";
   }
 }
 
-void parse(int type)
+bool parse(int type)
 {
-  // series of tokens must follow the correct syntax call syntax analysis
-  if(cur_token.type != type) // if the current type is not the same to expected type
+  if(cur_token.type != type)
   {
-    cur_pos--; // decrement the cur_pos to accurately pinpoint where the error happens
-    printf("Syntax error: Expected token of type %s, but received type %s at position %d: \n", translate(type), translate(cur_token.type), cur_pos);
-    exit(-1);
+    printf("SyntaxError: Expected token of type %s, but received type %s at position %d:\n", translate(type), translate(cur_token.type), cur_pos);
+    return false;
   }
+
+  return true;
 }
 
 bool isoperator(char c)
 {
-  return c == '+' || c == '-' || c == '*' || c == '/';
+  return c == '+' || c == '-';
 }
 
 bool iswhitespace(char c)
@@ -74,7 +74,7 @@ void get_next_token(char* s)
 {
   char c = s[cur_pos];
 
-  while(iswhitespace(c)) // we wont get out of this loop until the current character is not a whitespace anymore
+  while(iswhitespace(c))
   {
     cur_pos ++;
     c = s[cur_pos];
@@ -103,30 +103,36 @@ void get_next_token(char* s)
   }
   else
   {
-    printf("Invalid token received at position %d: %c", cur_pos, c);
-    exit(-1);
+    printf("Invalid token received at position %d: %c\n", cur_pos, c);
+    cur_token.type = INVALID;
   }
 }
 
 int interpret_text(char* s)
 {
-  // currently, the valid syntax is: number operator number
-  // not: number operator number operator number
-
   int result = 0;
 
   get_next_token(s);
-  parse(INT);
+
+  if(!parse(INT))
+    return -1;
+
   result = cur_token.num_value;
 
-  while(cur_pos < strlen(s)-1) // string recieves a special char at the end, so we're not including it by decrementing the length by 1
+  while(cur_pos < strlen(s)-1)
   {
     get_next_token(s);
-    parse(OP);
+
+    if(!parse(OP))
+      break;
+
     char op = cur_token.op_value;
 
     get_next_token(s);
-    parse(INT);
+
+    if(!parse(INT))
+      break;
+
     int operand = cur_token.num_value;
 
     result = calculate(result, op, operand);
@@ -134,27 +140,30 @@ int interpret_text(char* s)
   return result;
 }
 
+#define INPUT_LENGTH 1000
+
 int main(void)
 {
-  char* s = malloc(sizeof(char) * INPUT_LENGTH); // allocating exactly 1000 bytes
+  char* s = malloc(sizeof(char) * INPUT_LENGTH);
 
-  printf("Interpreter is running... ( enter 'q' to quit )\n");
+  printf("The intepreter is now running ( Enter 'exit' to leave )\n");
   while(true)
   {
-    printf(">>> "); // input here
-    fgets(s, INPUT_LENGTH, stdin); // fgets receieves our input in string
+    printf(">>> ");
+    fgets(s, INPUT_LENGTH, stdin);
 
-    if(s[0] == 'q')
+    if(strcmp(s, "exit") == 0)
     {
-      break; // abnormal termination
+      break;
     }
 
-    int result = interpret_text(s); // our string goes through set of process in interpret_text() function
+    int result = interpret_text(s);
     printf("Result: %d\n", result);
 
-    cur_pos = 0; // reset the cur_pos after every interpretation
+    cur_pos = 0;
   }
-  free(s); // free the memory to avoid memory leak
+
+  free(s);
 
   return 0;
 }
