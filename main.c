@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <ctype.h>
+#include <string.h>
 
-// MACROS
 #define INPUT_LENGTH 1000
 #define INT 0
 #define OP 1
@@ -18,6 +18,47 @@ typedef struct
 
 int cur_pos = 0;
 Token cur_token;
+
+int get_result(int left, char op, int right)
+{
+  switch(op)
+  {
+    case '+':
+      return left + right;
+    case '-':
+      return left - right;
+    case '*':
+      return left * right;
+    case '/':
+      return left / right;
+    default: // this is most likely wont happen, but still i prefer to include default here
+      return -1;
+  }
+}
+
+char* translate(int type)
+{
+  switch(type)
+  {
+    case 0:
+      return "INTEGER";
+    case 1:
+      return "OPERATOR";
+    default:
+      return "N/A";
+  }
+}
+
+void parse(int type)
+{
+  // series of tokens must follow the correct syntax call syntax analysis
+  if(cur_token.type != type) // if the current type is not the same to expected type
+  {
+    cur_pos--; // decrement the cur_pos to accurately pinpoint where the error happens
+    printf("Syntax error: Expected token of type %s, but received type %s at position %d: \n", translate(type), translate(cur_token.type), cur_pos);
+    exit(-1);
+  }
+}
 
 bool isoperator(char c)
 {
@@ -42,15 +83,23 @@ void get_next_token(char* s)
   if(isdigit(c))
   {
     cur_token.type = INT;
-    cur_token.num_value = c - '0'; // converts the digit character into an integer
+    cur_token.num_value = 0;
+
+    while(isdigit(c))
+    {
+      cur_token.num_value *= 10;
+      cur_token.num_value += s[cur_pos] - '0';
+
+      cur_pos++;
+      c = s[cur_pos];
+    }
   }
+
   else if(isoperator(c))
   {
     cur_token.type = OP;
     cur_token.op_value = s[cur_pos];
-  }
-  else if(iswhitespace(c))
-  {
+    cur_pos++;
   }
   else
   {
@@ -59,51 +108,13 @@ void get_next_token(char* s)
   }
 }
 
-char* translate(int type)
-{
-  switch(type)
-  {
-    case 0:
-      return "INTEGER";
-    case 1:
-      return "OPERATOR";
-    default:
-      return "N/A";
-  }
-}
-
-void parse(int type)
-{
-  // parsing is the process of expecting chars type
-  // if a text follows a correct syntax, its valid, if not then its invalid
-  // in order to identify whether it follows a correct syntax or not is through parsing
-  if(cur_token.type != type) // if the current type is not the ssame to expected type
-  {
-    printf("Syntax error: Expected token of type %s, but received type %s at position %d\n", translate(type), translate(cur_token.type), cur_pos);
-    exit(-1);
-  }
-  cur_pos++; // if theres no syntax error, then we can advance
-}
-
-int get_result(int left, char op, int right)
-{
-  switch(op)
-  {
-    case '+':
-      return left + right;
-    case '-':
-      return left - right;
-    case '*':
-      return left * right;
-    case '/':
-      return left / right;
-    default: // this is most likely wont happen, but still i prefer to include default here
-      return -1;
-  }
-}
-
 int interpret_text(char* s)
 {
+  // currently, the valid syntax is: number operator number
+  // not: number operator number operator number
+
+  int result = 0;
+
   get_next_token(s);
   parse(INT);
   int left = cur_token.num_value;
@@ -116,31 +127,32 @@ int interpret_text(char* s)
   parse(INT);
   int right = cur_token.num_value;
 
-  return get_result(left, op, right);
+  result = get_result(left, op, right);
+
+  return result;
 }
 
 int main(void)
 {
-  char* s = malloc(sizeof(char) * INPUT_LENGTH); // exactly 1000 bytes
+  char* s = malloc(sizeof(char) * INPUT_LENGTH); // allocating exactly 1000 bytes
 
-  printf("Interpreter is running... ( enter 'q' or 'clear' to quit )\n");
+  printf("Interpreter is running... ( enter 'q' to quit )\n");
   while(true)
   {
-    printf(">>> ");
-    fgets(s, INPUT_LENGTH, stdin);
+    printf(">>> "); // input here
+    fgets(s, INPUT_LENGTH, stdin); // fgets receieves our input in string
 
     if(s[0] == 'q')
     {
-      break;
+      break; // abnormal termination
     }
 
-
-    int result = interpret_text(s);
+    int result = interpret_text(s); // our string goes through set of process in interpret_text() function
     printf("Result: %d\n", result);
 
     cur_pos = 0; // reset the cur_pos after every interpretation
   }
-  free(s);
+  free(s); // free the memory to avoid memory leak
 
   return 0;
 }
