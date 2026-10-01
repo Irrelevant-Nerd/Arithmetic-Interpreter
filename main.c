@@ -19,18 +19,18 @@ typedef struct
 int cur_pos = 0;
 Token cur_token;
 
-int get_result(int left, char op, int right)
+int calculate(int x, char op, int y)
 {
   switch(op)
   {
     case '+':
-      return left + right;
+      return x + y;
     case '-':
-      return left - right;
+      return x - y;
     case '*':
-      return left * right;
+      return x * y;
     case '/':
-      return left / right;
+      return x / y;
     default: // this is most likely wont happen, but still i prefer to include default here
       return -1;
   }
@@ -117,18 +117,20 @@ int interpret_text(char* s)
 
   get_next_token(s);
   parse(INT);
-  int left = cur_token.num_value;
+  result = cur_token.num_value;
 
-  get_next_token(s);
-  parse(OP);
-  char op = cur_token.op_value;
+  while(cur_pos < strlen(s)-1) // string recieves a special char at the end, so we're not including it by decrementing the length by 1
+  {
+    get_next_token(s);
+    parse(OP);
+    char op = cur_token.op_value;
 
-  get_next_token(s);
-  parse(INT);
-  int right = cur_token.num_value;
+    get_next_token(s);
+    parse(INT);
+    int operand = cur_token.num_value;
 
-  result = get_result(left, op, right);
-
+    result = calculate(result, op, operand);
+  }
   return result;
 }
 
