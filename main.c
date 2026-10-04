@@ -103,7 +103,6 @@ void get_next_token(char* s)
   }
   else
   {
-    cur_pos--;
     printf("Invalid token received at position %d: %c\n", cur_pos, c);
     cur_token.type = INVALID;
   }
@@ -143,37 +142,40 @@ int interpret_text(char* s)
 
 #define BUF_SIZE 256
 
-void scan(char* buf)
+char* scan(char *buf, size_t capacity)
 {
-  fgets(buf, sizeof(buf), stdin);
-  char *p;
+  if (fgets(buf, capacity, stdin) == NULL)
+    return NULL;
 
-  if(!(p=strchr(buf, '\n'))) // if it founds the '\n', do this
+  char *p = strchr(buf, '\n');
+
+  if (p)
   {
-    scanf("%*[^\n]"); // clear up to newline
-    scanf("%*c");
+    *p = '\0';
   }
-  else // if not do this
+  else
   {
-    *p = 0;
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
   }
+  return buf;
 }
 
 int main(void)
 {
-  char string[BUF_SIZE]; // we store our string here
+  char buf[BUF_SIZE]; // we store our text here
 
   printf("The intepreter is now running ( Enter 'q' to quit )\n");
   while(true)
   {
     printf(">>> ");
-    scan(string);
+    char* text = scan(buf, sizeof(buf));
 
-    if(strcmp(string, "q") == 0)
+    if(strcmp(text, "q") == 0)
     {
       break;
     }
-    printf("%d\n", interpret_text(string));
+    printf("%d\n", interpret_text(text));
     cur_pos = 0; // reset the position
   }
 
