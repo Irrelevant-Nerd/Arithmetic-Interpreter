@@ -40,24 +40,11 @@ char* translate(int type)
 {
   switch(type)
   {
-    case 0:
-      return "INTEGER";
-    case 1:
-      return "OPERATOR";
-    default:
-      return "INVALID";
+    case -1: return "INVALID";
+    case 0: return "INTEGER";
+    case 1: return "OPERATOR";
+    default: return "NONE";
   }
-}
-
-bool parse(int type)
-{
-  if(cur_token.type != type)
-  {
-    printf("SyntaxError: Expected token of type %s, but received type %s at position %d:\n", translate(type), translate(cur_token.type), cur_pos);
-    return false;
-  }
-
-  return true;
 }
 
 bool isoperator(char c)
@@ -67,7 +54,45 @@ bool isoperator(char c)
 
 bool iswhitespace(char c)
 {
-  return c == ' ';
+  return c == ' ' || c == '\t'; // tab is treated as whitespace
+}
+
+bool is_quit(const char* s)
+{
+  // ignore any whitespace
+  while(iswhitespace(*s))
+  {
+    s++;
+  }
+
+  if(*s == 'q' || *s == 'Q')
+  {
+    s++;
+  }
+
+  // if char does not equal to any of these, return false
+  else
+  {
+    return false;
+  }
+
+  while(iswhitespace(*s))
+  {
+    s++;
+  }
+
+  // if end of the string, return true
+  return *s == '\0';
+}
+
+bool parse(int type)
+{
+  if(cur_token.type != type)
+  {
+    printf("SyntaxError: Expected token of type %s, but received type %s at position %d:\n", translate(type), translate(cur_token.type), cur_pos);
+    return false;
+  }
+  return true;
 }
 
 void get_next_token(char* s)
@@ -76,7 +101,7 @@ void get_next_token(char* s)
 
   while(iswhitespace(c))
   {
-    cur_pos ++;
+    cur_pos++;
     c = s[cur_pos];
   }
 
@@ -103,8 +128,9 @@ void get_next_token(char* s)
   }
   else
   {
-    printf("Invalid token received at position %d: %c\n", cur_pos, c);
+    printf("TokenError: Invalid token received at position %d: %c\n", cur_pos, c);
     cur_token.type = INVALID;
+    cur_pos++;
   }
 }
 
@@ -114,29 +140,45 @@ int interpret_text(char* s)
 
   get_next_token(s);
 
-  if(!parse(INT))
-    return -1;
-
+  if(!parse(INT)) // if the first character is not INT, we return -1 immediately;
+  {
+    result = -1;
+    return result;
+  }
   result = cur_token.num_value;
 
-  while(cur_pos < strlen(s)-1)
+  while(true)
   {
+    while(iswhitespace(s[cur_pos]))
+    {
+      cur_pos++;
+    }
+    if(s[cur_pos] == '\0') // loops stops when we reach the null terminator '\0'
+    {
+      break;
+    }
     get_next_token(s);
 
     if(!parse(OP))
+    {
+      result = -1;
       break;
+    }
 
     char op = cur_token.op_value;
 
     get_next_token(s);
 
     if(!parse(INT))
+    {
+      result = -1;
       break;
-
+    }
     int operand = cur_token.num_value;
 
     result = calculate(result, op, operand);
   }
+
   return result;
 }
 
@@ -165,16 +207,22 @@ int main(void)
 {
   char buf[BUF_SIZE]; // we store our text here
 
-  printf("The intepreter is now running ( Enter 'q' to quit )\n");
+  printf("The intepreter is now running ( Enter 'q' or 'Q' to quit )\n");
   while(true)
   {
     printf(">>> ");
     char* text = scan(buf, sizeof(buf));
 
-    if(strcmp(text, "q") == 0)
+    if(text == NULL)
     {
       break;
     }
+
+    if(is_quit(text))
+    {
+      break;
+    }
+
     printf("%d\n", interpret_text(text));
     cur_pos = 0; // reset the position
   }
